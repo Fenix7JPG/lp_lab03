@@ -2,3 +2,4 @@ __pycache__/
 *.pyc
 .hermes/
 .specify/
+.trabajo_individual

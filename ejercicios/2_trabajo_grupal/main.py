@@ -23,3 +23,5 @@ def main():
         if respuesta != "s" and respuesta != "S":
             break
     print("¡Hasta la próxima!")
+
+main()
