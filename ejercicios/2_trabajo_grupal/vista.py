@@ -43,18 +43,22 @@ def vida_visible(pokemon):
     return pokemon.vida
 
 def barra_vida(pokemon, dano_reciente):
-    # barra de 12 celdas: verde = vida, rojo = daño del turno, puntos = daño viejo
+    # barra de 12 celdas: verde = vida, rojo = daño recibido este turno, puntos = daño viejo
     celdas = 12
+    # celdas verdes: la vida actual sobre la vida maxima
     llenas = vida_visible(pokemon) * celdas // pokemon.vida_max
     if llenas < 0:
         llenas = 0
     if llenas > celdas:
         llenas = celdas
+    # celdas rojas: el daño que acaba de llegar en este turno
     rojas = dano_reciente * celdas // pokemon.vida_max
     if rojas < 0:
         rojas = 0
     if llenas + rojas > celdas:
+        # nunca se sale de la barra: el rojo se recorta si no cabe
         rojas = celdas - llenas
+    # celdas en puntos: el daño de turnos anteriores (ya no se resalta)
     viejas = celdas - llenas - rojas
     barra = ""
     if llenas > 0:
@@ -64,7 +68,8 @@ def barra_vida(pokemon, dano_reciente):
     return barra + "." * viejas
 
 def mostrar_turno(jugador, enemigo, eventos, dano_jugador=0, dano_enemigo=0):
-    # fotograma del turno: estado de ambos arriba y un unico log debajo
+    # fotograma del turno: estado de ambos arriba y debajo un solo log de eventos
+    # dano_jugador / dano_enemigo = daño que cada uno RECIBIO este turno (rojo en su barra)
     print()
     print("TU POKEMON : " + jugador.nombre + " (" + jugador.tipo + ") " + barra_vida(jugador, dano_jugador) + " " + verde(str(vida_visible(jugador)) + "/" + str(jugador.vida_max)))
     print("RIVAL      : " + enemigo.nombre + " (" + enemigo.tipo + ") " + barra_vida(enemigo, dano_enemigo) + " " + verde(str(vida_visible(enemigo)) + "/" + str(enemigo.vida_max)))
@@ -90,14 +95,16 @@ def evento_inmune(objetivo, habilidad):
     return habilidad + " no afecta a " + objetivo.nombre + " (tipo fuego)."
 
 def evento_efecto(dato, es_rival):
-    # efecto pasivo aplicado (dato del modelo); es_rival=True pinta la curacion en cian
+    # arma la linea de un efecto pasivo (dato viene del modelo)
+    # es_rival: True cuando el efecto le paso al pokemon del rival (lo sabe el controlador,
+    # la vista no puede comparar nombres porque dos pokemons podrian llamarse igual)
     if dato["tipo"] == "dano":
-        # el daño que sufre (rojo)
+        # quien sufre el daño va en rojo
         return dato["nombre"] + " sufre " + rojo(str(dato["cantidad"])) + " de daño por " + dato["causa"]
     if es_rival:
-        # la curacion del rival (cian)
+        # la curacion del rival va en cian, para no confundirla con la propia
         return "El " + dato["nombre"] + " rival recupera " + cian(str(dato["cantidad"])) + " de vida por " + dato["causa"]
-    # la curacion propia (verde)
+    # la curacion propia va en verde
     return dato["nombre"] + " recupera " + verde(str(dato["cantidad"])) + " de vida por " + dato["causa"]
 
 def elegir_pokemon():
