@@ -1,5 +1,5 @@
 # =====================================================
-# CONTROLADOR: turnos, IA del enemigo y flujo de partidas
+# CONTROLADOR: turnos, IA del enemigo y log de eventos
 # =====================================================
 
 import random
@@ -29,51 +29,39 @@ def elegir_movimiento_enemigo(enemigo, jugador):
     return random.choice(ataques)
 
 def batalla(jugador, enemigo):
-    # combate por turnos completo hasta que uno (o ambos) se debilita
+    # combate por turnos con un log cronologico hasta que uno (o ambos) cae
     vista.limpiar_pantalla()
     print("¡Un " + enemigo.nombre + " salvaje apareció!")
     print("¡Enfréntate a él con tu " + jugador.nombre + "!")
 
-    # estado inicial (todavia no hay acciones que comentar)
-    vista.mostrar_cuadro(jugador, enemigo, [], [])
+    # estado inicial (log vacio)
+    vista.mostrar_turno(jugador, enemigo, [])
 
     while True:
-        # 3 grupos por columna para que el orden sea simetrico: propio, ajeno, reaccion
-        efectos_jugador = []
-        efectos_enemigo = []
-        acciones_jugador = []
-        acciones_enemigo = []
-        reacciones_jugador = []
-        reacciones_enemigo = []
+        eventos = []
         dano_jugador = 0  # daño que recibio tu pokemon este turno (rojo en la barra)
         dano_enemigo = 0  # daño que recibio el rival este turno (rojo en su barra)
 
         # 1) efectos pasivos de ambos al inicio del turno
         for dato in jugador.aplicar_efectos():
-            efectos_jugador.append(vista.armar_efecto(dato))
-            if dato["tipo"] == "cura":
-                # tu curacion tambien se anota en la columna del rival
-                efectos_enemigo.append(vista.armar_curacion_ajena(dato["nombre"], dato["causa"], dato["cantidad"]))
+            eventos.append(vista.evento_efecto(dato, False))
         for dato in enemigo.aplicar_efectos():
-            efectos_enemigo.append(vista.armar_efecto(dato))
-            if dato["tipo"] == "cura":
-                # la curacion del rival tambien se anota en tu columna
-                efectos_jugador.append(vista.armar_curacion_ajena(dato["nombre"], dato["causa"], dato["cantidad"]))
+            eventos.append(vista.evento_efecto(dato, True))
 
         # 2) chequeo de debilitamiento por efectos
         if jugador.esta_muerto() and enemigo.esta_muerto():
             vista.limpiar_pantalla()
-            vista.mostrar_cuadro(jugador, enemigo, efectos_jugador, efectos_enemigo, dano_jugador, dano_enemigo)
+            vista.mostrar_turno(jugador, enemigo, eventos, dano_jugador, dano_enemigo)
             print("¡Ambos se debilitaron! ¡Empate!")
             return
         if jugador.esta_muerto():
             vista.limpiar_pantalla()
-            vista.mostrar_cuadro(jugador, enemigo, efectos_jugador, efectos_enemigo, dano_jugador, dano_enemigo)
+            vista.mostrar_turno(jugador, enemigo, eventos, dano_jugador, dano_enemigo)
             print("¡" + jugador.nombre + " se debilitó! ¡Perdiste!")
             return
         if enemigo.esta_muerto():
             vista.limpiar_pantalla()
-            vista.mostrar_cuadro(jugador, enemigo, efectos_jugador, efectos_enemigo, dano_jugador, dano_enemigo)
+            vista.mostrar_turno(jugador, enemigo, eventos, dano_jugador, dano_enemigo)
             print("¡" + enemigo.nombre + " se debilitó! ¡Ganaste!")
             return
 
@@ -84,22 +72,21 @@ def batalla(jugador, enemigo):
             # ataque instantaneo: golpea al rival
             dano = jugador.atacar(nombre, enemigo)
             dano_enemigo = dano
-            acciones_jugador.append(vista.armar_uso("Tu", jugador, nombre, dano))
-            reacciones_enemigo.append(vista.armar_sufrir("El", enemigo, nombre, dano))
+            eventos.append(vista.evento_uso(jugador, enemigo, nombre, dano))
         else:
             # pasiva: el daño va al rival, la cura a si mismo
             resultado = jugador.efecto(nombre, enemigo)
             if resultado == "activa":
-                acciones_jugador.append(vista.armar_activa("Tu", jugador, nombre, habilidad["duracion"]))
+                eventos.append(vista.evento_activa(jugador, nombre, habilidad["duracion"]))
             if resultado == "repetido":
-                acciones_jugador.append(nombre + " ya está activo. Turno perdido.")
+                eventos.append(vista.evento_repetido(nombre))
             if resultado == "inmune":
-                acciones_jugador.append(nombre + " no afecta a " + enemigo.nombre + " (tipo fuego).")
+                eventos.append(vista.evento_inmune(enemigo, nombre))
 
         if enemigo.esta_muerto():
             # fin por victoria
             vista.limpiar_pantalla()
-            vista.mostrar_cuadro(jugador, enemigo, efectos_jugador + acciones_jugador + reacciones_jugador, efectos_enemigo + acciones_enemigo + reacciones_enemigo, dano_jugador, dano_enemigo)
+            vista.mostrar_turno(jugador, enemigo, eventos, dano_jugador, dano_enemigo)
             print("¡" + enemigo.nombre + " se debilitó! ¡Ganaste!")
             return
 
@@ -110,24 +97,22 @@ def batalla(jugador, enemigo):
             # ataque del enemigo: golpea a tu pokemon
             dano = enemigo.atacar(nombre, jugador)
             dano_jugador = dano
-            acciones_enemigo.append(vista.armar_uso("El", enemigo, nombre, dano))
-            reacciones_jugador.append(vista.armar_sufrir("Tu", jugador, nombre, dano))
+            eventos.append(vista.evento_uso(enemigo, jugador, nombre, dano))
         else:
             # pasiva del enemigo: el daño va a tu pokemon, la cura a si mismo
             resultado = enemigo.efecto(nombre, jugador)
             if resultado == "activa":
-                acciones_enemigo.append(vista.armar_activa("El", enemigo, nombre, habilidad["duracion"]))
+                eventos.append(vista.evento_activa(enemigo, nombre, habilidad["duracion"]))
             if resultado == "inmune":
-                acciones_enemigo.append(nombre + " no afecta a " + jugador.nombre + " (tipo fuego).")
+                eventos.append(vista.evento_inmune(jugador, nombre))
 
         if jugador.esta_muerto():
             # fin por derrota
             vista.limpiar_pantalla()
-            vista.mostrar_cuadro(jugador, enemigo, efectos_jugador + acciones_jugador + reacciones_jugador, efectos_enemigo + acciones_enemigo + reacciones_enemigo, dano_jugador, dano_enemigo)
+            vista.mostrar_turno(jugador, enemigo, eventos, dano_jugador, dano_enemigo)
             print("¡" + jugador.nombre + " se debilitó! ¡Perdiste!")
             return
 
-        # 5) fotograma del turno: resultado completo y menu al final
+        # 5) fotograma del turno: log completo y menu al final
         vista.limpiar_pantalla()
-        vista.mostrar_cuadro(jugador, enemigo, efectos_jugador + acciones_jugador + reacciones_jugador, efectos_enemigo + acciones_enemigo + reacciones_enemigo, dano_jugador, dano_enemigo)
-
+        vista.mostrar_turno(jugador, enemigo, eventos, dano_jugador, dano_enemigo)

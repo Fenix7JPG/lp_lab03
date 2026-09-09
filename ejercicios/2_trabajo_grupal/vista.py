@@ -4,7 +4,7 @@
 
 import modelo
 
-# colores ANSI: rojo sufre, amarillo causa, verde se cura, cian se cura el rival
+# colores ANSI: amarillo causa, rojo sufre, verde se cura, cian se cura el rival
 ROJO = "\033[91m"
 VERDE_CLARO = "\033[92m"
 CIAN = "\033[96m"
@@ -63,38 +63,41 @@ def barra_vida(pokemon, dano_reciente):
         barra = barra + rojo("#" * rojas)
     return barra + "." * viejas
 
-def mostrar_cuadro(jugador, enemigo, lineas_jugador, lineas_enemigo, dano_jugador=0, dano_enemigo=0):
-    # cuadro del turno: barras y vidas arriba, comentarios de cada columna debajo
+def mostrar_turno(jugador, enemigo, eventos, dano_jugador=0, dano_enemigo=0):
+    # fotograma del turno: estado de ambos arriba y un unico log debajo
     print()
     print("TU POKEMON : " + jugador.nombre + " (" + jugador.tipo + ") " + barra_vida(jugador, dano_jugador) + " " + verde(str(vida_visible(jugador)) + "/" + str(jugador.vida_max)))
-    for linea in lineas_jugador:
-        print("     " + linea)
-    print()
     print("RIVAL      : " + enemigo.nombre + " (" + enemigo.tipo + ") " + barra_vida(enemigo, dano_enemigo) + " " + verde(str(vida_visible(enemigo)) + "/" + str(enemigo.vida_max)))
-    for linea in lineas_enemigo:
-        print("     " + linea)
+    print()
+    for evento in eventos:
+        print("     " + evento)
     print()
 
-def armar_uso(palabra, pokemon, habilidad, dano):
-    # linea de ataque propio (causa = amarillo)
-    return palabra + " " + pokemon.nombre + " usa " + habilidad + " y causa " + amarillo(str(dano)) + " de daño!"
+def evento_uso(atacante, defensor, habilidad, dano):
+    # ataque: quien ataca, cuanto y a quien (causa = amarillo)
+    return atacante.nombre + " usa " + habilidad + " y causa " + amarillo(str(dano)) + " de daño a " + defensor.nombre + "!"
 
-def armar_sufrir(palabra, pokemon, habilidad, dano):
-    # linea de daño recibido (sufre = rojo)
-    return palabra + " " + pokemon.nombre + " sufre " + rojo(str(dano)) + " de daño de " + habilidad + " del rival"
+def evento_activa(pokemon, habilidad, duracion):
+    # activacion de una pasiva
+    return pokemon.nombre + " activa " + habilidad + " durante " + str(duracion) + " turnos!"
 
-def armar_activa(palabra, pokemon, habilidad, duracion):
-    # linea de activacion de una pasiva
-    return palabra + " " + pokemon.nombre + " activa " + habilidad + " durante " + str(duracion) + " turnos!"
+def evento_repetido(habilidad):
+    # aviso de pasiva ya activa
+    return habilidad + " ya está activo. Turno perdido."
 
-def armar_curacion_ajena(nombre, habilidad, cantidad):
-    # curacion del rival vista desde tu columna (cian)
-    return "El " + nombre + " rival recupera " + cian(str(cantidad)) + " de vida por " + habilidad
+def evento_inmune(objetivo, habilidad):
+    # aviso de inmunidad (fuego no se quema)
+    return habilidad + " no afecta a " + objetivo.nombre + " (tipo fuego)."
 
-def armar_efecto(dato):
-    # linea de un efecto pasivo aplicado al dueño del dato (rojo/verde)
+def evento_efecto(dato, es_rival):
+    # efecto pasivo aplicado (dato del modelo); es_rival=True pinta la curacion en cian
     if dato["tipo"] == "dano":
+        # el daño que sufre (rojo)
         return dato["nombre"] + " sufre " + rojo(str(dato["cantidad"])) + " de daño por " + dato["causa"]
+    if es_rival:
+        # la curacion del rival (cian)
+        return "El " + dato["nombre"] + " rival recupera " + cian(str(dato["cantidad"])) + " de vida por " + dato["causa"]
+    # la curacion propia (verde)
     return dato["nombre"] + " recupera " + verde(str(dato["cantidad"])) + " de vida por " + dato["causa"]
 
 def elegir_pokemon():
