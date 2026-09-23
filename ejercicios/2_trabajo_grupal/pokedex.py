@@ -1,10 +1,7 @@
-# =====================================================
-# POKEDEX: catalogo de datos de los pokemons
-# 12 pokemons (4 por tipo), cada uno con 3 habilidades
-# =====================================================
+# pokedex.py
 
 POKEDEX = {
-    # ---------------- FUEGO ----------------
+    # FUEGO
     "Charmander": {
         "tipo": "fuego",
         "vida": 110,
@@ -41,7 +38,7 @@ POKEDEX = {
             "Quemadura": {"tipo": "pasiva", "dano": 12, "cura": 0, "duracion": 3}
         }
     },
-    # ---------------- AGUA ----------------
+    # AGUA
     "Squirtle": {
         "tipo": "agua",
         "vida": 110,
@@ -78,7 +75,7 @@ POKEDEX = {
             "Hidrocuración": {"tipo": "pasiva", "dano": 0, "cura": 14, "duracion": 3}
         }
     },
-    # ---------------- PLANTA ----------------
+    # PLANTA
     "Bulbasaur": {
         "tipo": "planta",
         "vida": 115,

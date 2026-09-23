@@ -1,6 +1,4 @@
-# =====================================================
-# MODELO: reglas y estado del juego (sin interfaz)
-# =====================================================
+# modelo.py
 
 import random
 from pokedex import POKEDEX
@@ -46,35 +44,67 @@ def dano_aleatorio(base, tipo_atacante, tipo_defensor):
 class Pokemon():
     # un combatiente: vida, tipo, habilidades y pasivas activas
     def __init__(self, nombre, tipo, vida, habilidades):
-        self.nombre = nombre
-        self.tipo = tipo
-        self.vida_max = vida
-        self.vida = vida
-        self.nivel = 1
-        self.habilidades = habilidades
-        self.efectos = []  # pasivas activas sobre este pokemon
+        self.__nombre = nombre
+        self.__tipo = tipo
+        self.__vida_max = vida
+        self.__vida = vida
+        self.__nivel = 1
+        self.__habilidades = habilidades
+        self.__efectos = []  # pasivas activas sobre este pokemon
+
+    def get_nombre(self):
+        return self.__nombre
+    nombre = property(fget=get_nombre)
+
+    def get_tipo(self):
+        return self.__tipo
+    tipo = property(fget=get_tipo)
+
+    def get_vida_max(self):
+        return self.__vida_max
+    vida_max = property(fget=get_vida_max)
+
+    def get_vida(self):
+        return self.__vida
+    
+    def set_vida(self, nueva_vida):
+        if nueva_vida < 0:
+            self.__vida = 0
+        else:
+            self.__vida = nueva_vida
+    vida = property(fget=get_vida,fset=set_vida)
+
+    def get_habilidades(self):
+        return self.__habilidades
+    habilidades = property(fget=get_habilidades)
+
+    def get_efectos(self):
+        return self.__efectos
+    def set_efectos(self,efectos):
+        self.__efectos = efectos
+    efectos = property(fget=get_efectos,fset=set_efectos)
 
     def calcular_dano(self, habilidad, rival):
         # daño del golpe: tiro al azar entre base y base x eficacia
-        base = habilidad["poder"] * self.nivel
-        return dano_aleatorio(base, self.tipo, rival.tipo)
+        base = habilidad["poder"] * self.__nivel
+        return dano_aleatorio(base, self.__tipo, rival.tipo)
 
     def atacar(self, nombre_habilidad, rival):
         # aplica el daño de un ataque y lo resta al rival
-        dano = self.calcular_dano(self.habilidades[nombre_habilidad], rival)
+        dano = self.calcular_dano(self.__habilidades[nombre_habilidad], rival)
         rival.vida = rival.vida - dano
         return dano
 
     def esta_activo(self, nombre_habilidad):
         # True si una pasiva con ese nombre ya esta activa
-        for efecto in self.efectos:
+        for efecto in self.__efectos:
             if efecto["nombre"] == nombre_habilidad:
                 return True
         return False
 
     def activar_pasiva(self, nombre_habilidad, rival):
         # activa una pasiva y devuelve "activa", "repetido" o "inmune"
-        habilidad = self.habilidades[nombre_habilidad]
+        habilidad = self.__habilidades[nombre_habilidad]
         if habilidad["dano"] > 0:
             # RUTA 1: pasiva de daño (ej: Quemadura) -> el efecto se le aplica AL RIVAL
             if rival.tipo == "fuego":
@@ -88,19 +118,19 @@ class Pokemon():
                 "dano": habilidad["dano"],
                 "cura": habilidad["cura"],
                 "turnos": habilidad["duracion"],
-                "tipo_activador": self.tipo
+                "tipo_activador": self.__tipo
             })
             return "activa"
         # RUTA 2: pasiva de cura (ej: Hidrocuracion) -> el efecto se aplica A SI MISMO
         if self.esta_activo(nombre_habilidad):
             # no se acumula la misma pasiva dos veces
             return "repetido"
-        self.efectos.append({
+        self.__efectos.append({
             "nombre": nombre_habilidad,
             "dano": habilidad["dano"],
             "cura": habilidad["cura"],
             "turnos": habilidad["duracion"],
-            "tipo_activador": self.tipo
+            "tipo_activador": self.__tipo
         })
         return "activa"
 
@@ -109,13 +139,13 @@ class Pokemon():
         # y devuelve una lista de eventos (datos sueltos, sin colores)
         eventos = []
         efectos_que_sobreviven = []
-        for efecto in self.efectos:
+        for efecto in self.__efectos:
             if efecto["dano"] > 0:
                 # el daño por turno tambien rueda al azar en su rango
-                dano = dano_aleatorio(efecto["dano"], efecto["tipo_activador"], self.tipo)
-                self.vida = self.vida - dano
+                dano = dano_aleatorio(efecto["dano"], efecto["tipo_activador"], self.__tipo)
+                self.__vida = self.__vida - dano
                 eventos.append({
-                    "nombre": self.nombre,
+                    "nombre": self.__nombre,
                     "tipo": "dano",
                     "cantidad": dano,
                     "causa": efecto["nombre"]
@@ -123,15 +153,15 @@ class Pokemon():
             if efecto["cura"] > 0:
                 # la cura no pasa del tope de vida: se recorta lo que sobra
                 curado = 0
-                if self.vida < self.vida_max:
+                if self.__vida < self.__vida_max:
                     curado = efecto["cura"]
-                    if self.vida + curado > self.vida_max:
-                        curado = self.vida_max - self.vida
-                self.vida = self.vida + curado
+                    if self.__vida + curado > self.__vida_max:
+                        curado = self.__vida_max - self.__vida
+                self.__vida = self.__vida + curado
                 if curado > 0:
                     # con vida llena no hay evento: "recupera 0" seria ruido
                     eventos.append({
-                        "nombre": self.nombre,
+                        "nombre": self.__nombre,
                         "tipo": "cura",
                         "cantidad": curado,
                         "causa": efecto["nombre"]
@@ -140,12 +170,12 @@ class Pokemon():
             efecto["turnos"] = efecto["turnos"] - 1
             if efecto["turnos"] > 0:
                 efectos_que_sobreviven.append(efecto)
-        self.efectos = efectos_que_sobreviven
+        self.__efectos = efectos_que_sobreviven
         return eventos
 
     def esta_debilitado(self):
         # el pokemon cae cuando su vida llega a cero o menos
-        return self.vida <= 0
+        return self.__vida <= 0
 
     @classmethod
     def crear(cls, nombre):

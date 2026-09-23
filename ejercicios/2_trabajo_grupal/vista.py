@@ -1,21 +1,43 @@
-# =====================================================
-# VISTA: muestra pantalla y pide datos (no cambia estado)
-# =====================================================
+# vista.py
 
 import modelo
 
 # colores ANSI: amarillo causa, rojo sufre, verde se cura, cian se cura el rival
-ROJO = "\033[91m"
-VERDE_CLARO = "\033[92m"
-CIAN = "\033[96m"
-AMARILLO = "\033[93m"
+
 NORMAL = "\033[0m"
 
-def activar_colores():
-    # habilita los colores ANSI en la consola de Windows
-    import os
-    if os.name == "nt":
-        os.system("")
+def rojo(texto):
+    return "\033[91m" + texto + NORMAL
+
+def verde(texto):
+    return "\033[92m" + texto + NORMAL
+
+def amarillo(texto):
+    return "\033[93m" + texto + NORMAL
+
+def cian(texto):
+    return "\033[96m" + texto + NORMAL
+
+def rojo_titulo(texto):
+    return "\033[38;2;255;0;0m" + texto + NORMAL
+
+def rojo_titulo(texto):
+    return "\033[38;2;255;0;0m" + texto + NORMAL
+
+def naranja_titulo(texto):
+    return "\033[38;2;255;80;40m" + texto + NORMAL
+
+def salmon_titulo(texto):
+    return "\033[38;2;255;140;90m" + texto + NORMAL
+
+def melocoton_titulo(texto):
+    return "\033[38;2;255;190;150m" + texto + NORMAL
+
+def casi_blanco_titulo(texto):
+    return "\033[38;2;255;230;215m" + texto + NORMAL
+
+def blanco_titulo(texto):
+    return "\033[38;2;255;255;255m" + texto + NORMAL
 
 def limpiar_pantalla():
     # empuja el fotograma anterior fuera de la pantalla
@@ -24,29 +46,11 @@ def limpiar_pantalla():
         print("")
         i = i + 1
 
-def rojo(texto):
-    return ROJO + texto + NORMAL
-
-def verde(texto):
-    return VERDE_CLARO + texto + NORMAL
-
-def amarillo(texto):
-    return AMARILLO + texto + NORMAL
-
-def cian(texto):
-    return CIAN + texto + NORMAL
-
-def vida_visible(pokemon):
-    # nunca muestra vida negativa
-    if pokemon.vida < 0:
-        return 0
-    return pokemon.vida
-
 def barra_vida(pokemon, dano_reciente):
     # barra de 12 celdas: verde = vida, rojo = daño recibido este turno, puntos = daño viejo
     celdas = 12
     # celdas verdes: la vida actual sobre la vida maxima
-    llenas = vida_visible(pokemon) * celdas // pokemon.vida_max
+    llenas = pokemon.vida * celdas // pokemon.vida_max
     if llenas < 0:
         llenas = 0
     if llenas > celdas:
@@ -71,8 +75,8 @@ def mostrar_turno(jugador, enemigo, eventos, dano_jugador=0, dano_enemigo=0):
     # fotograma del turno: estado de ambos arriba y debajo un solo log de eventos
     # dano_jugador / dano_enemigo = daño que cada uno RECIBIO este turno (rojo en su barra)
     print()
-    print("TU POKEMON : " + jugador.nombre + " (" + jugador.tipo + ") " + barra_vida(jugador, dano_jugador) + " " + verde(str(vida_visible(jugador)) + "/" + str(jugador.vida_max)))
-    print("RIVAL      : " + enemigo.nombre + " (" + enemigo.tipo + ") " + barra_vida(enemigo, dano_enemigo) + " " + verde(str(vida_visible(enemigo)) + "/" + str(enemigo.vida_max)))
+    print("TU POKEMON : " + jugador.nombre + " (" + jugador.tipo + ") " + barra_vida(jugador, dano_jugador) + " " + verde(str(jugador.vida)) + "/" + str(jugador.vida_max))
+    print("RIVAL      : " + enemigo.nombre + " (" + enemigo.tipo + ") " + barra_vida(enemigo, dano_enemigo) + " " + verde(str(enemigo.vida)) + "/" + str(enemigo.vida_max))
     print()
     for evento in eventos:
         print("     " + evento)
@@ -107,51 +111,97 @@ def evento_efecto(dato, es_rival):
     # la curacion propia va en verde
     return dato["nombre"] + " recupera " + verde(str(dato["cantidad"])) + " de vida por " + dato["causa"]
 
-def elegir_pokemon():
-    # menu de eleccion de pokemon; devuelve el Pokemon creado
-    nombres = []
-    for nombre in modelo.POKEDEX:
-        nombres.append(nombre)
+
+def mostrar_titulo_juego():
+    limpiar_pantalla()
+    
     print()
-    print("ELIGE TU POKEMON:")
+    print(rojo_titulo("██████╗░░█████╗░██╗░░██╗███████╗███╗░░░███╗░█████╗░███╗░░██╗"))
+    print(rojo_titulo("██╔══██╗██╔══██╗██║░██╔╝██╔════╝████╗░████║██╔══██╗████╗░██║"))
+    print(naranja_titulo("██████╔╝██║░░██║█████═╝░█████╗░░██╔████╔██║██║░░██║██╔██╗██║"))
+    print(salmon_titulo("██╔═══╝░██║░░██║██╔═██╗░██╔══╝░░██║╚██╔╝██║██║░░██║██║╚████║"))
+    print(melocoton_titulo("██║░░░░░╚█████╔╝██║░╚██╗███████╗██║░╚═╝░██║╚█████╔╝██║░╚███║"))
+    print(blanco_titulo("╚═╝░░░░░░╚════╝░╚═╝░░╚═╝╚══════╝╚═╝░░░░░╚═╝░╚════╝░╚═╝░░╚══╝"))
+    print()
+
+def menu_pokemon(nombres):
+    # Construir la lista de items (texto de cada opción)
+    items = []
     i = 1
     for nombre in nombres:
         datos = modelo.POKEDEX[nombre]
-        print("  " + str(i) + ") " + nombre + " (" + datos["tipo"] + ")")
+        tipo = datos["tipo"]
+        texto = str(i) + ") " + nombre + " (" + tipo + ")"
+        items.append(texto)
         i = i + 1
-    while True:
-        opcion = input("Número: ")
-        try:
-            numero = int(opcion)
-        except ValueError:
-            print("Escribe un número válido.")
-            continue
-        if numero >= 1 and numero <= len(nombres):
-            return modelo.Pokemon.crear(nombres[numero - 1])
-        print("Elige un número entre 1 y " + str(len(nombres)) + ".")
+    
+    # Calcular el ancho del contenido (el texto más largo)
+    titulo = "ELIGE TU POKEMON"
+    ancho_max = len(titulo)
+    for item in items:
+        if len(item) > ancho_max:
+            ancho_max = len(item)
+    
+    # El marco tiene 2 espacios de padding a cada lado
+    ancho = ancho_max + 4
+    
+    # Dibujar la parte de arriba del marco
+    print("")
+    print("┌" + "─" * ancho + "┐")
+    
+    # Dibujar el título centrado
+    espacios_izq = (ancho - len(titulo)) // 2
+    espacios_der = ancho - len(titulo) - espacios_izq
+    print("│" + " " * espacios_izq + titulo + " " * espacios_der + "│")
+    
+    # Línea separadora
+    print("├" + "─" * ancho + "┤")
+    
+    # Dibujar cada item dentro del marco
+    for item in items:
+        espacios_der = ancho - 2 - len(item)  # 2 = padding izquierdo
+        print("│  " + item + " " * espacios_der + "│")
+    
+    # Cerrar el marco
+    print("└" + "─" * ancho + "┘")
+    print("")
 
-def elegir_habilidad(pokemon, rival):
-    # menu de habilidades con rango de daño contra el rival; devuelve el nombre elegido
-    nombres = []
-    for nombre in pokemon.habilidades:
-        nombres.append(nombre)
-    print("HABILIDADES DE " + pokemon.nombre + " (vs " + rival.nombre + "):")
-    i = 1
-    for nombre in nombres:
-        habilidad = pokemon.habilidades[nombre]
-        if habilidad["tipo"] == "ataque":
-            minimo, maximo = modelo.rango_dano(habilidad["poder"], pokemon.tipo, rival.tipo)
-            print("  " + str(i) + ") " + nombre + " (daño " + str(minimo) + " a " + str(maximo) + ")")
-        else:
-            print("  " + str(i) + ") " + nombre + " (efecto, " + str(habilidad["duracion"]) + " turnos)")
-        i = i + 1
-    while True:
-        opcion = input("Movimiento: ")
-        try:
-            numero = int(opcion)
-        except ValueError:
-            print("Escribe un número válido.")
-            continue
-        if numero >= 1 and numero <= len(nombres):
-            return nombres[numero - 1]
-        print("Elige un número entre 1 y " + str(len(nombres)) + ".")
+def pedir_opcion_pokemon():
+    opcion = input("Introduce el numero de tu pokemon favorito:")
+    return opcion
+
+def mostrar_encabezado_habilidades(nombre_pokemon):
+    print("HABILIDADES DE " + nombre_pokemon +" : ")
+
+def mostrar_opcion_ataque(indice, nombre, minimo, maximo):
+    print("  " + str(indice) + ") " + nombre + " (daño " + str(minimo) + " a " + str(maximo) + ")")
+
+def mostrar_opcion_efecto(indice, nombre, duracion):
+    print("  " + str(indice) + ") " + nombre + " (efecto, " + str(duracion) + " turnos)")
+
+def pedir_movimiento():
+    return input("Movimiento: ")
+
+def mostrar_error_numero_valido():
+    print("Escribe un número válido.")
+
+def mostrar_error_rango_habilidades(total_habilidades):
+    print("Elige un número entre 1 y " + str(total_habilidades) + ".")
+
+
+def mostrar_inicio_combate(nombre_jugador, nombre_enemigo):
+    print()
+    print("¡Un " + nombre_enemigo + " salvaje apareció!")
+    print("¡Enfréntate a él con tu " + nombre_jugador + "!")
+
+def mostrar_resultado_empate():
+    print("¡Ambos se debilitaron! ¡Empate!")
+
+def mostrar_resultado_derrota(nombre_jugador):
+    print("¡" + nombre_jugador + " se debilitó! ¡Perdiste!")
+
+def mostrar_resultado_victoria(nombre_enemigo):
+    print("¡" + nombre_enemigo + " se debilitó! ¡Ganaste!")
+
+def fin():
+    print("¡Fin del juego!")
